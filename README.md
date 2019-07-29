@@ -4,4 +4,4 @@ Firmware for driving a Dynamixel servo using a single pin. It uses [Dynamixel2Ar
 
 The reference board is a custom PCB designed for an Adafruit Itsy Bitsy 32u4 5V, with 3 momentary buttons. PCB design files are in the repo.
 
-
+The folder structure is a [PlatformIO](https://platformio.org/) project.
