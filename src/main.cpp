@@ -3,9 +3,11 @@
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
 #define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
 #define DIR_PIN 2 //this is used to drive the interrupt. Should be 2, 3 or 7
-#define BUTTON1 8
-#define BUTTON2 6
-#define BUTTON3 4
+#define BUTTON0 15 //SCK
+#define BUTTON1 16
+#define BUTTON2 4
+#define BUTTON3 6
+#define BUTTON4 8
 Dynamixel2Arduino dxl(Serial1, DIR_PIN);
 
 //// Half-duplex TTL signalling ////
@@ -34,26 +36,31 @@ void dir_pin_changed(){
 }
 //// End of half-duplex routines ////
 
-///--- Define the 3 positions here ---////
+///--- Define the 5 positions here ---////
 /// a value of 1024 is 90 degrees
 /// Don't start at 0 because it shifts a bit into negative numbers and causes the next movement to go 270 degrees
 /// so starting at 512 should be fine
-const int POS1 = 400;
-const int POS2 = 1024+512;
-const int POS3 = 2048+512;
+const int POS0 = 512; //45
+const int POS1 = 1024*1; //90
+const int POS2 = 1024*2; //180
+const int POS3 = 1024*3; //270
+const int POS4 = 10; //360
 
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(A3, OUTPUT);
   Serial.begin(115200); 
   dxl.begin(57600); //by default the motors use 57600
   attachInterrupt(digitalPinToInterrupt(DIR_PIN), dir_pin_changed, CHANGE); //for the half duplex switching
   // dxl.torqueOff(1);
   // dxl.setOperatingMode(1, OP_POSITION); //only needs to be set once per motor
   // dxl.torqueOn(1);
+  pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
   pinMode(BUTTON2, INPUT_PULLUP);
   pinMode(BUTTON3, INPUT_PULLUP);
+  pinMode(BUTTON4, INPUT_PULLUP);
 }
 
 unsigned long timeMotorLastMoved = 0;
@@ -70,17 +77,30 @@ void enableMotor(){
 
 
 void loop() {
+  if(!digitalRead(BUTTON0)){
+    // Serial.println("button0");
+    enableMotor();
+    dxl.setGoalPosition(1, POS0);
+  }
   if(!digitalRead(BUTTON1)){
+    // Serial.println("button1");
     enableMotor();
     dxl.setGoalPosition(1, POS1);
   }
   if(!digitalRead(BUTTON2)){
+    // Serial.println("button2");
     enableMotor();
     dxl.setGoalPosition(1, POS2);
   }
   if(!digitalRead(BUTTON3)){
+    // Serial.println("button3");
     enableMotor();
     dxl.setGoalPosition(1, POS3);
+  }
+  if(!digitalRead(BUTTON4)){
+    // Serial.println("button4");
+    enableMotor();
+    dxl.setGoalPosition(1, POS4);
   }
   // Serial.println(dxl.readControlTableItem(OPERATING_MODE, 1));
   // Serial.println(dxl.readControlTableItem(TORQUE_ENABLE, 1));
@@ -90,10 +110,13 @@ void loop() {
     if (dxl.getPresentVelocity(1) != 0) {
       //motor is turning. Blink the LED and update the time record
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+      //also turn pin A3 high
+      digitalWrite(A3, HIGH);
       timeMotorLastMoved = millis();
     }else{
       //motor has stopped. 
       digitalWrite(LED_BUILTIN, HIGH);
+      digitalWrite(A3, LOW);
       //How long since it stopped?
       if(millis() - timeMotorLastMoved > 1000){
         //it's been stopped for a while so disable the torque
@@ -108,5 +131,5 @@ void loop() {
     analogWrite(LED_BUILTIN, led_brightness);
     led_counter+=8;
   }
-  delay(50);
+  delay(20);
 }
