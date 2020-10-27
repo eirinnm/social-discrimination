@@ -45,7 +45,7 @@ const int POS1 = 1024*1; //90
 const int POS2 = 1024*2; //180
 const int POS3 = 1024*3; //270
 const int POS4 = 10; //360
-
+const int MOTOR1 = 1;
 
 void setup() {
   pinMode(LED_BUILTIN, OUTPUT);
@@ -53,14 +53,19 @@ void setup() {
   Serial.begin(115200); 
   dxl.begin(57600); //by default the motors use 57600
   attachInterrupt(digitalPinToInterrupt(DIR_PIN), dir_pin_changed, CHANGE); //for the half duplex switching
-  // dxl.torqueOff(1);
-  // dxl.setOperatingMode(1, OP_POSITION); //only needs to be set once per motor
-  // dxl.torqueOn(1);
   pinMode(BUTTON0, INPUT_PULLUP);
   pinMode(BUTTON1, INPUT_PULLUP);
   pinMode(BUTTON2, INPUT_PULLUP);
   pinMode(BUTTON3, INPUT_PULLUP);
   pinMode(BUTTON4, INPUT_PULLUP);
+  //
+  ////////// Set motor options (if needed) /////////////
+  //
+  // to make permanent changes to motor options (such as operation mode, or ID),
+  // we need to turn the torque off
+  // dxl.torqueOff(MOTOR1);
+  // dxl.setOperatingMode(MOTOR1, OP_POSITION); //only needs to be set once per motor
+  // dxl.torqueOn(MOTOR1);
 }
 
 unsigned long timeMotorLastMoved = 0;
@@ -68,11 +73,11 @@ bool motorEnabled = false;
 byte led_counter = 0; //for the idle fade effect
 
 void enableMotor(){
-  dxl.writeControlTableItem(PROFILE_ACCELERATION, 1, 3);
-  dxl.writeControlTableItem(PROFILE_VELOCITY, 1, 20);
-  dxl.torqueOn(1);
-  timeMotorLastMoved = millis();
-  motorEnabled = true;
+    dxl.writeControlTableItem(ControlTableItem::PROFILE_ACCELERATION, MOTOR1, 3); //set accel to 3
+    dxl.writeControlTableItem(ControlTableItem::PROFILE_VELOCITY, MOTOR1, 20); // set top speed to 20
+    dxl.torqueOn(MOTOR1);
+    timeMotorLastMoved = millis();
+    motorEnabled = true;
 }
 
 
@@ -80,34 +85,34 @@ void loop() {
   if(!digitalRead(BUTTON0)){
     // Serial.println("button0");
     enableMotor();
-    dxl.setGoalPosition(1, POS0);
+    dxl.setGoalPosition(MOTOR1, POS0);
   }
   if(!digitalRead(BUTTON1)){
     // Serial.println("button1");
     enableMotor();
-    dxl.setGoalPosition(1, POS1);
+    dxl.setGoalPosition(MOTOR1, POS1);
   }
   if(!digitalRead(BUTTON2)){
     // Serial.println("button2");
     enableMotor();
-    dxl.setGoalPosition(1, POS2);
+    dxl.setGoalPosition(MOTOR1, POS2);
   }
   if(!digitalRead(BUTTON3)){
     // Serial.println("button3");
     enableMotor();
-    dxl.setGoalPosition(1, POS3);
+    dxl.setGoalPosition(MOTOR1, POS3);
   }
   if(!digitalRead(BUTTON4)){
     // Serial.println("button4");
     enableMotor();
-    dxl.setGoalPosition(1, POS4);
+    dxl.setGoalPosition(MOTOR1, POS4);
   }
-  // Serial.println(dxl.readControlTableItem(OPERATING_MODE, 1));
-  // Serial.println(dxl.readControlTableItem(TORQUE_ENABLE, 1));
-  Serial.println(dxl.getPresentPosition(1));
+  // Serial.println(dxl.readControlTableItem(OPERATING_MODE, MOTOR1));
+  // Serial.println(dxl.readControlTableItem(TORQUE_ENABLE, MOTOR1));
+  Serial.println(dxl.getPresentPosition(MOTOR1));
 
   if(motorEnabled){
-    if (dxl.getPresentVelocity(1) != 0) {
+    if (dxl.getPresentVelocity(MOTOR1) != 0) {
       //motor is turning. Blink the LED and update the time record
       digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
       //also turn pin A3 high
@@ -120,7 +125,7 @@ void loop() {
       //How long since it stopped?
       if(millis() - timeMotorLastMoved > 1000){
         //it's been stopped for a while so disable the torque
-        dxl.torqueOff(1);
+        dxl.torqueOff(MOTOR1);
         motorEnabled = false;
         digitalWrite(LED_BUILTIN, LOW);
       }
